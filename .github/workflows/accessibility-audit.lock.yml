@@ -167,10 +167,12 @@ jobs:
           node-version: '24'
       - name: Install dependencies
         run: npm install
+      - name: Build site without webmentions
+        run: "# Generate internal links and topics first\nnode src/scripts/generate-links.js\nnpx tsx src/scripts/generate-topics.ts\n# Note: Skipping webmentions fetch since WEBMENTION_API_KEY is not available in this workflow\n# This is expected for accessibility testing and won't affect the audit\n# The site will still function normally, just without displaying webmentions\necho \"Build preparation complete\"\n"
       - name: Start dev server in background
         run: npm run dev &
       - name: Wait for dev server to be ready
-        run: sleep 15
+        run: "echo \"Waiting for dev server to start...\"\nsleep 10\n# Test if server is responsive\nfor i in {1..20}; do\n  if curl -s http://localhost:4321 > /dev/null; then\n    echo \"Dev server is ready!\"\n    exit 0\n  fi\n  echo \"Waiting for server... attempt $i/20\"\n  sleep 2\ndone\necho \"Dev server failed to start within timeout\"\nexit 1"
 
       - name: Create gh-aw temp directory
         run: |
@@ -996,14 +998,24 @@ jobs:
           
           ## Context
           
-          The Astro site has been built and is now running locally at `http://localhost:3000`. You have access to Playwright for browser automation and can take screenshots.
+          The Astro site has been built and is now running locally at `http://localhost:4321` (Astro's default dev port). You have access to Playwright for browser automation and can take screenshots.
+          
+          **Important Notes:**
+          - The site is running in development mode without webmentions (requires `WEBMENTION_API_KEY` which is not available in this test environment)
+          - This is expected and will not affect accessibility testing - webmentions are a social feature and not part of the core content
+          - All internal links, topics, and content have been generated and are accessible for testing
           
           ## Your Task
           
-          1. **Crawl the entire site** starting from `http://localhost:3000`:
+          1. **Crawl the entire site** starting from `http://localhost:4321`:
              - Navigate through all main pages (home, essays, notes, patterns, library, etc.)
              - Follow internal links to discover all content pages
              - Build a comprehensive list of unique URLs to test
+             - **Error Handling**: If you encounter any errors during crawling (e.g., 404s, broken links, JavaScript errors), create a GitHub issue documenting:
+               - The error message and stack trace
+               - The URL or action that triggered it
+               - Steps to reproduce
+               - Suggested fix if apparent
           
           2. **For each page, check for accessibility violations**:
              - Missing alt text on images
@@ -1034,16 +1046,43 @@ jobs:
                - Suggested fix/remediation steps
              - Format issues using markdown with proper headings and code blocks
           
-          5. **Important**:
-             - Only test pages on `localhost:3000` - do NOT make external network requests
+          5. **Error Handling & Reporting**:
+             - If you encounter any errors while running tests (build errors, runtime errors, Playwright failures, etc.), create a GitHub issue with:
+               - Title: `[Error] Brief description of the error`
+               - Labels: `bug`, `automated-audit`
+               - Full error message and stack trace
+               - Context: What you were trying to do when the error occurred
+               - Suggested fix or workaround if you can determine one
+               - Example:
+                 ```markdown
+                 ## Error Description
+                 Playwright timeout when trying to navigate to /patterns page
+                 
+                 ## Error Message
+                 ```
+                 TimeoutError: page.goto: Timeout 30000ms exceeded
+                 ```
+                 
+                 ## Context
+                 Attempting to navigate to http://localhost:4321/patterns for accessibility testing
+                 
+                 ## Suggested Fix
+                 - Check if patterns page has slow-loading components
+                 - Increase timeout for pages with heavy D3 visualizations
+                 - Ensure patterns data is being loaded correctly
+                 ```
+          
+          6. **Important Testing Guidelines**:
+             - Only test pages on `localhost:4321` - do NOT make external network requests
              - Group similar violations on the same page into one issue (e.g., "Multiple images missing alt text on /essays/example")
              - Don't create duplicate issues for the same problem across multiple pages - instead list all affected pages in one issue
              - Prioritize issues by severity (Critical first)
              - Limit to the top 20 most important issues if you find many violations
+             - If any part of the test fails or you're unsure about something, create an issue to document it rather than silently skipping it
           
           ## Output Format
           
-          For each issue you create, use this structure:
+          ### For Accessibility Issues
           
           ```markdown
           ## Summary
@@ -1057,8 +1096,8 @@ jobs:
           [Critical/High/Medium/Low]
           
           ## Affected Pages
-          - http://localhost:3000/[page-url]
-          - http://localhost:3000/[another-page-url]
+          - http://localhost:4321/[page-url]
+          - http://localhost:4321/[another-page-url]
           
           ## Problem Description
           [Detailed explanation of what's wrong]
@@ -1076,10 +1115,59 @@ jobs:
           [If applicable, reference screenshot taken]
           
           ## Suggested Fix
-          [Specific code changes or recommendations]
+          [Specific code changes or recommendations with file paths]
           ```
           
-          Begin the audit now. Start by crawling the site to discover all pages, then systematically test each page for accessibility violations.
+          ### For Error Issues
+          
+          ```markdown
+          ## Error Summary
+          [Brief description of what failed]
+          
+          ## Error Type
+          [Build Error / Runtime Error / Test Error / Network Error]
+          
+          ## Error Message
+          ```
+          [Full error message and stack trace]
+          ```
+          
+          ## Context
+          - **When**: [What step/action triggered this]
+          - **Where**: [URL, file, or component involved]
+          - **Expected**: [What should have happened]
+          - **Actual**: [What actually happened]
+          
+          ## Steps to Reproduce
+          1. [Step 1]
+          2. [Step 2]
+          3. [Error occurs]
+          
+          ## Possible Causes
+          [Your analysis of what might be causing this]
+          
+          ## Suggested Fix
+          ```javascript
+          // Example code fix if applicable
+          ```
+          [Or description of fix]
+          
+          ## Workaround
+          [Temporary solution if one exists]
+          ```
+          
+          ## Execution Plan
+          
+          1. **First**, verify the dev server is running at `http://localhost:4321` by navigating to it
+          2. **If server verification fails**, create an error issue and stop
+          3. **If server is running**, begin systematic crawling of:
+             - Main pages: `/`, `/essays`, `/notes`, `/patterns`, `/library`, `/antilibrary`, `/talks`, `/podcasts`, `/now`, `/about`, `/garden`
+             - Discover content pages by following links from main pages
+          4. **For each page tested**, if you encounter any errors (navigation failures, timeouts, JavaScript errors), immediately create an error issue
+          5. **Continue testing** accessible pages even if some pages fail - document failures but don't let them stop the entire audit
+          6. **Summarize findings** at the end with count of issues created by type
+          
+          Begin the audit now. Start by verifying the dev server is accessible, then crawl the site to discover all pages, then systematically test each page for accessibility violations.
           
           PROMPT_EOF
       - name: Append XPIA security instructions to prompt

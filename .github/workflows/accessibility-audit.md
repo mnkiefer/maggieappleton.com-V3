@@ -137,7 +137,7 @@ The Astro site has been built and is now running locally at `http://localhost:43
 
 ## Output Format
 
-For each issue you create, use this structure:
+### For Accessibility Issues
 
 ```markdown
 ## Summary
@@ -151,8 +151,8 @@ For each issue you create, use this structure:
 [Critical/High/Medium/Low]
 
 ## Affected Pages
-- http://localhost:3000/[page-url]
-- http://localhost:3000/[another-page-url]
+- http://localhost:4321/[page-url]
+- http://localhost:4321/[another-page-url]
 
 ## Problem Description
 [Detailed explanation of what's wrong]
@@ -170,7 +170,56 @@ For each issue you create, use this structure:
 [If applicable, reference screenshot taken]
 
 ## Suggested Fix
-[Specific code changes or recommendations]
+[Specific code changes or recommendations with file paths]
 ```
 
-Begin the audit now. Start by crawling the site to discover all pages, then systematically test each page for accessibility violations.
+### For Error Issues
+
+```markdown
+## Error Summary
+[Brief description of what failed]
+
+## Error Type
+[Build Error / Runtime Error / Test Error / Network Error]
+
+## Error Message
+```
+[Full error message and stack trace]
+```
+
+## Context
+- **When**: [What step/action triggered this]
+- **Where**: [URL, file, or component involved]
+- **Expected**: [What should have happened]
+- **Actual**: [What actually happened]
+
+## Steps to Reproduce
+1. [Step 1]
+2. [Step 2]
+3. [Error occurs]
+
+## Possible Causes
+[Your analysis of what might be causing this]
+
+## Suggested Fix
+```javascript
+// Example code fix if applicable
+```
+[Or description of fix]
+
+## Workaround
+[Temporary solution if one exists]
+```
+
+## Execution Plan
+
+1. **First**, verify the dev server is running at `http://localhost:4321` by navigating to it
+2. **If server verification fails**, create an error issue and stop
+3. **If server is running**, begin systematic crawling of:
+   - Main pages: `/`, `/essays`, `/notes`, `/patterns`, `/library`, `/antilibrary`, `/talks`, `/podcasts`, `/now`, `/about`, `/garden`
+   - Discover content pages by following links from main pages
+4. **For each page tested**, if you encounter any errors (navigation failures, timeouts, JavaScript errors), immediately create an error issue
+5. **Continue testing** accessible pages even if some pages fail - document failures but don't let them stop the entire audit
+6. **Summarize findings** at the end with count of issues created by type
+
+Begin the audit now. Start by verifying the dev server is accessible, then crawl the site to discover all pages, then systematically test each page for accessibility violations.
