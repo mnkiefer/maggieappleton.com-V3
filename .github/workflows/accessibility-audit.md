@@ -15,7 +15,9 @@ safe-outputs:
     max: 20
 engine: claude
 tools:
-  playwright:
+    playwright:
+      version: "v1.41.0"
+      allowed_domains: ["github.com"]
 steps:
   - name: Install dependencies
     run: npm install
