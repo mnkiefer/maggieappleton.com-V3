@@ -167,14 +167,10 @@ jobs:
           node-version: '24'
       - name: Install dependencies
         run: npm install
-      - name: Generate content files
-        run: node src/scripts/generate-links.js && npx tsx src/scripts/generate-topics.ts
-      - name: Build Astro site
-        run: npx astro build
-      - name: Start local server in background
-        run: npx serve -s dist -l tcp://localhost:3000 &
-      - name: Wait for server to be ready
-        run: sleep 5
+      - name: Start dev server in background
+        run: npm run dev &
+      - name: Wait for dev server to be ready
+        run: sleep 15
 
       - name: Create gh-aw temp directory
         run: |

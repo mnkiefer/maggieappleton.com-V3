@@ -19,14 +19,32 @@ tools:
 steps:
   - name: Install dependencies
     run: npm install
-  - name: Generate content files
-    run: node src/scripts/generate-links.js && npx tsx src/scripts/generate-topics.ts
-  - name: Build Astro site
-    run: npx astro build
-  - name: Start local server in background
-    run: npx serve -s dist -l tcp://localhost:3000 &
-  - name: Wait for server to be ready
-    run: sleep 5
+  - name: Build site without webmentions
+    run: |
+      # Generate internal links and topics first
+      node src/scripts/generate-links.js
+      npx tsx src/scripts/generate-topics.ts
+      # Note: Skipping webmentions fetch since WEBMENTION_API_KEY is not available in this workflow
+      # This is expected for accessibility testing and won't affect the audit
+      # The site will still function normally, just without displaying webmentions
+      echo "Build preparation complete"
+  - name: Start dev server in background
+    run: npm run dev &
+  - name: Wait for dev server to be ready
+    run: |
+      echo "Waiting for dev server to start..."
+      sleep 10
+      # Test if server is responsive
+      for i in {1..20}; do
+        if curl -s http://localhost:4321 > /dev/null; then
+          echo "Dev server is ready!"
+          exit 0
+        fi
+        echo "Waiting for server... attempt $i/20"
+        sleep 2
+      done
+      echo "Dev server failed to start within timeout"
+      exit 1
 ---
 
 # Accessibility Audit Workflow
@@ -35,14 +53,24 @@ You are an accessibility testing specialist. Your task is to perform a comprehen
 
 ## Context
 
-The Astro site has been built and is now running locally at `http://localhost:3000`. You have access to Playwright for browser automation and can take screenshots.
+The Astro site has been built and is now running locally at `http://localhost:4321` (Astro's default dev port). You have access to Playwright for browser automation and can take screenshots.
+
+**Important Notes:**
+- The site is running in development mode without webmentions (requires `WEBMENTION_API_KEY` which is not available in this test environment)
+- This is expected and will not affect accessibility testing - webmentions are a social feature and not part of the core content
+- All internal links, topics, and content have been generated and are accessible for testing
 
 ## Your Task
 
-1. **Crawl the entire site** starting from `http://localhost:3000`:
+1. **Crawl the entire site** starting from `http://localhost:4321`:
    - Navigate through all main pages (home, essays, notes, patterns, library, etc.)
    - Follow internal links to discover all content pages
    - Build a comprehensive list of unique URLs to test
+   - **Error Handling**: If you encounter any errors during crawling (e.g., 404s, broken links, JavaScript errors), create a GitHub issue documenting:
+     - The error message and stack trace
+     - The URL or action that triggered it
+     - Steps to reproduce
+     - Suggested fix if apparent
 
 2. **For each page, check for accessibility violations**:
    - Missing alt text on images
@@ -73,12 +101,39 @@ The Astro site has been built and is now running locally at `http://localhost:30
      - Suggested fix/remediation steps
    - Format issues using markdown with proper headings and code blocks
 
-5. **Important**:
-   - Only test pages on `localhost:3000` - do NOT make external network requests
+5. **Error Handling & Reporting**:
+   - If you encounter any errors while running tests (build errors, runtime errors, Playwright failures, etc.), create a GitHub issue with:
+     - Title: `[Error] Brief description of the error`
+     - Labels: `bug`, `automated-audit`
+     - Full error message and stack trace
+     - Context: What you were trying to do when the error occurred
+     - Suggested fix or workaround if you can determine one
+     - Example:
+       ```markdown
+       ## Error Description
+       Playwright timeout when trying to navigate to /patterns page
+       
+       ## Error Message
+       ```
+       TimeoutError: page.goto: Timeout 30000ms exceeded
+       ```
+       
+       ## Context
+       Attempting to navigate to http://localhost:4321/patterns for accessibility testing
+       
+       ## Suggested Fix
+       - Check if patterns page has slow-loading components
+       - Increase timeout for pages with heavy D3 visualizations
+       - Ensure patterns data is being loaded correctly
+       ```
+
+6. **Important Testing Guidelines**:
+   - Only test pages on `localhost:4321` - do NOT make external network requests
    - Group similar violations on the same page into one issue (e.g., "Multiple images missing alt text on /essays/example")
    - Don't create duplicate issues for the same problem across multiple pages - instead list all affected pages in one issue
    - Prioritize issues by severity (Critical first)
    - Limit to the top 20 most important issues if you find many violations
+   - If any part of the test fails or you're unsure about something, create an issue to document it rather than silently skipping it
 
 ## Output Format
 
