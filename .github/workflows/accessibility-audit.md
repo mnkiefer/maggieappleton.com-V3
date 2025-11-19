@@ -19,8 +19,8 @@ tools:
 steps:
   - name: Install dependencies
     run: npm install
-  - name: Build Astro site
-    run: npm run build
+  - name: Build Astro site (without webmentions)
+    run: node src/scripts/generate-links.js && tsx src/scripts/generate-topics.ts && astro build
   - name: Start local server in background
     run: npx serve -s dist -l tcp://localhost:3000 &
   - name: Wait for server to be ready
