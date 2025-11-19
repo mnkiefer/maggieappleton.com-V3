@@ -19,21 +19,14 @@ tools:
 steps:
   - name: Install dependencies
     run: npm install
-  - name: Build site without webmentions
-    run: |
-      # Generate internal links and topics first
-      node src/scripts/generate-links.js
-      npx tsx src/scripts/generate-topics.ts
-      # Note: Skipping webmentions fetch since WEBMENTION_API_KEY is not available in this workflow
-      # This is expected for accessibility testing and won't affect the audit
-      # The site will still function normally, just without displaying webmentions
-      echo "Build preparation complete"
   - name: Start dev server in background
     run: npm run dev &
   - name: Wait for dev server to be ready
     run: |
       echo "Waiting for dev server to start..."
-      sleep 10
+      echo "Note: npm run dev automatically runs generate-links.js and generate-topics.ts"
+      echo "Webmentions will be skipped (requires WEBMENTION_API_KEY)"
+      sleep 15
       # Test if server is responsive
       for i in {1..20}; do
         if curl -s http://localhost:4321 > /dev/null; then
@@ -41,7 +34,7 @@ steps:
           exit 0
         fi
         echo "Waiting for server... attempt $i/20"
-        sleep 2
+        sleep 3
       done
       echo "Dev server failed to start within timeout"
       exit 1

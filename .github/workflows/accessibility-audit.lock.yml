@@ -167,12 +167,10 @@ jobs:
           node-version: '24'
       - name: Install dependencies
         run: npm install
-      - name: Build site without webmentions
-        run: "# Generate internal links and topics first\nnode src/scripts/generate-links.js\nnpx tsx src/scripts/generate-topics.ts\n# Note: Skipping webmentions fetch since WEBMENTION_API_KEY is not available in this workflow\n# This is expected for accessibility testing and won't affect the audit\n# The site will still function normally, just without displaying webmentions\necho \"Build preparation complete\"\n"
       - name: Start dev server in background
         run: npm run dev &
       - name: Wait for dev server to be ready
-        run: "echo \"Waiting for dev server to start...\"\nsleep 10\n# Test if server is responsive\nfor i in {1..20}; do\n  if curl -s http://localhost:4321 > /dev/null; then\n    echo \"Dev server is ready!\"\n    exit 0\n  fi\n  echo \"Waiting for server... attempt $i/20\"\n  sleep 2\ndone\necho \"Dev server failed to start within timeout\"\nexit 1"
+        run: "echo \"Waiting for dev server to start...\"\necho \"Note: npm run dev automatically runs generate-links.js and generate-topics.ts\"\necho \"Webmentions will be skipped (requires WEBMENTION_API_KEY)\"\nsleep 15\n# Test if server is responsive\nfor i in {1..20}; do\n  if curl -s http://localhost:4321 > /dev/null; then\n    echo \"Dev server is ready!\"\n    exit 0\n  fi\n  echo \"Waiting for server... attempt $i/20\"\n  sleep 3\ndone\necho \"Dev server failed to start within timeout\"\nexit 1"
 
       - name: Create gh-aw temp directory
         run: |
